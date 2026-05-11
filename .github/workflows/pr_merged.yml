@@ -60,3 +60,35 @@ jobs:
       # (optional) Uncomment the lines below and follow Step 7 if you want to manage Task orchestration via source control
       # - name: Run schedules.sql to create or alter tasks for tasty_bytes_dbt_object_gh_action
       #   run: snow sql -f ${{ github.workspace }}/tasty_bytes/schedules.sql -x
+
+      - name: Compile dbt project
+        run: snow dbt compile -x
+
+
+      - name: Upload manifest to Snowflake stage
+        run: |
+              snow sql -x -q "CREATE STAGE IF NOT EXISTS dbt_artifacts"
+              snow sql -x -q "PUT file://target/manifest.json @dbt_artifacts/prod/ AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
+
+
+
+
+# - name: Download production manifest from Snowflake stage
+#   run: |
+#     mkdir -p target-defer
+#     FILE_EXISTS=$(snow sql -x -q "LIST @dbt_artifacts/prod/manifest.json" --format csv 2>/dev/null | tail -n +2 | wc -l)
+#     if [ "$FILE_EXISTS" -gt 0 ]; then
+#       snow sql -x -q "GET @dbt_artifacts/prod/manifest.json file://target-defer/"
+#       echo "MANIFEST_EXISTS=true" >> $GITHUB_ENV
+#     else
+#       echo "No production manifest found on stage. Running full build."
+#       echo "MANIFEST_EXISTS=false" >> $GITHUB_ENV
+#     fi
+
+# - name: dbt build modified models
+#   run: |
+#     if [ "$MANIFEST_EXISTS" = "true" ]; then
+#       dbt build --select state:modified+ --defer --state target-defer/
+#     else
+#       dbt build
+#     fi

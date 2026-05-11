@@ -40,10 +40,14 @@ jobs:
       # The -x is shorthand for --temporary-connection
       - run: snow connection test -x
 
+      - name: Set target schema
+        run: |
+          BRANCH_NAME=$(echo "${GITHUB_HEAD_REF}" | sed 's/[^a-zA-Z0-9]/_/g' | tr '[:lower:]' '[:upper:]') >> $GITHUB_ENV
+          echo "DBT_CI_SCHEMA=${SNOWFLAKE_SCHEMA}_${BRANCH_NAME}" >> $GITHUB_ENV
+
       # Clone prod schema for testing
       - name: Clone all prod schemas with feature branch suffix
         run: |
-          BRANCH_NAME=$(echo "${GITHUB_HEAD_REF}" | sed 's/[^a-zA-Z0-9]/_/g' | tr '[:lower:]' '[:upper:]')
           SCHEMAS=$(snow sql -x -q "SELECT SCHEMA_NAME FROM  
           ${{ vars.SNOWFLAKE_DATABASE }}.INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME LIKE 'PROD%';" --format csv | tail -n +2)
           echo "All schemas identified: ${SCHEMAS}"
@@ -57,12 +61,12 @@ jobs:
 
       # The --force setting creates the object or updates it if it already exists
       # You can remove the "--source" flag if your dbt_project.yml is at root of your repo
-      - name: Create a new tester dbt project object in ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
-        run: snow dbt deploy tester_tasty_bytes_dbt_project_object_gh_action --source ./tasty_bytes_dbt_demo --dbt-version 1.10.15 --force -x
+      - name: Create a new tester dbt project object in ${{ vars.SNOWFLAKE_DATABASE }}.${DBT_CI_SCHEMA}
+        run: snow dbt deploy tester_tasty_bytes_dbt_project_object_gh_action --source ./tasty_bytes_dbt_demo --schema ${DBT_CI_SCHEMA} --dbt-version 1.10.15 --force -x
 
       - name: List all of the snowflake dbt project objects in your account
         run: snow dbt list -x
 
       # Builds all models and runs tests in DAG order, failing early if any upstream test breaks
-      - name: Build and test dbt project in ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+      - name: Build and test dbt project in ${{ vars.SNOWFLAKE_DATABASE }}.${DBT_CI_SCHEMA}
         run: snow dbt execute -x tester_tasty_bytes_dbt_project_object_gh_action build --target ci

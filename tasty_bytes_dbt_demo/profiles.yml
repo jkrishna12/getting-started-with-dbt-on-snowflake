@@ -13,7 +13,7 @@ tasty_bytes:
     ci:
       account: '_' # Put any value here, it will be overwritten by a GitHub repository secret
       database: tasty_bytes_dbt_db
-      schema: test #"{{ env_var('SNOWFLAKE_SCHEMA') }}"
+      schema: "{{ env_var('DBT_CI_SCHEMA') }}" #"{{ env_var('SNOWFLAKE_SCHEMA') }}"
       role: ACCOUNTADMIN # Use whichever role has USAGE on the database and schema
       type: snowflake
       warehouse: tasty_bytes_dbt_wh
