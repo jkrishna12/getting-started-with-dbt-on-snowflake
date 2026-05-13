@@ -44,6 +44,7 @@ jobs:
         run: |
           BRANCH_NAME=$(echo "${GITHUB_HEAD_REF}" | sed 's/[^a-zA-Z0-9]/_/g' | tr '[:lower:]' '[:upper:]') >> $GITHUB_ENV
           echo "DBT_CI_SCHEMA=${SNOWFLAKE_SCHEMA}_${BRANCH_NAME}" >> $GITHUB_ENV
+          echo "DBT_CI_SCHEMA: ${DBT_CI_SCHEMA}"
 
       # Clone prod schema for testing
       - name: Clone all prod schemas with feature branch suffix
